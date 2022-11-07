@@ -14,8 +14,12 @@ path = "src/main.rs"
 name = "zero2prod"
 
 [dependencies]
-log = "0.4"
-env_logger = "0.9"
+tracing = { version = "0.1", features = ["log"] }
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
+tracing-bunyan-formatter = "0.3"
+tracing-log = "0.1"
+tracing-actix-web = "0.6"
+secrecy = { version = "0.8", features = ["serde"] }
 config = "0.13"
 actix-web = "4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -38,4 +42,5 @@ features = [
 # Dev dependencies are used exclusively when running tests or examples
 # They do not get included in the final application binary!
 [dev-dependencies]
+once_cell = "1"
 reqwest = "0.11"

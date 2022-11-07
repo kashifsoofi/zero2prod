@@ -9,22 +9,34 @@ pub struct SubscriptionRequest {
     name: String
 }
 
+#[tracing::instrument(
+    name = "Adding a new subscriber",
+    skip(request, pool),
+    fields(
+        subscriber_email = %request.email,
+        subscriber_name = %request.name,
+    )
+)]
 pub async fn subscribe(
     request: web::Json<SubscriptionRequest>,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    let request_id = Uuid::new_v4();
-    log::info!(
-        "request_id {} - Adding '{}' '{}' as a new subscriber.",
-        request_id,
-        request.email,
-        request.name
-    );
-    log::info!(
-        "request_id {} - Saving new subscriber details in the database",
-        request_id
-    );
-    match sqlx::query!(
+    match insert_subscriber(&pool, &request).await
+    {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_e) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[tracing::instrument(
+    name = "Saving new subscriber details in the database",
+    skip(request, pool)
+)]
+pub async fn insert_subscriber(
+    pool: &PgPool,
+    request: &SubscriptionRequest,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name, subscribed_at)
         VALUES($1, $2, $3, $4)
@@ -34,23 +46,11 @@ pub async fn subscribe(
         request.name,
         Utc::now(),
     )
-    .execute(pool.get_ref())
+    .execute(pool)
     .await
-    {
-        Ok(_) => {
-            log::info!(
-                "request_id {} - New subscriber details have been saved",
-                request_id
-            );
-            HttpResponse::Ok().finish()
-        }
-        Err(e) => {
-            log::error!(
-                "request_id {} - Failed to execute query: {:?}",
-                request_id,
-                e
-            );
-            HttpResponse::InternalServerError().finish()
-        }
-    }
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
+    Ok(())
 }
