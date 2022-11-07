@@ -1,12 +1,12 @@
-use chrono::Utc;
-use uuid::Uuid;
-use sqlx::PgPool;
 use actix_web::{web, HttpResponse};
+use chrono::Utc;
+use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
 pub struct SubscriptionRequest {
     email: String,
-    name: String
+    name: String,
 }
 
 #[tracing::instrument(
@@ -21,8 +21,7 @@ pub async fn subscribe(
     request: web::Json<SubscriptionRequest>,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    match insert_subscriber(&pool, &request).await
-    {
+    match insert_subscriber(&pool, &request).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_e) => HttpResponse::InternalServerError().finish(),
     }
