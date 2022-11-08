@@ -39,6 +39,8 @@ pub struct EmailClientConfiguration {
     pub base_url: String,
     pub sender_email: String,
     pub authorization_token: Secret<String>,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timeout_milliseconds: u64,
 }
 
 pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
@@ -92,5 +94,9 @@ impl DatabaseConfiguration {
 impl EmailClientConfiguration {
     pub fn sender(&self) -> Result<SubscriberEmail, String> {
         SubscriberEmail::parse(self.sender_email.clone())
+    }
+
+    pub fn timeout(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(self.timeout_milliseconds)
     }
 }
