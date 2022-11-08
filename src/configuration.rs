@@ -2,9 +2,9 @@ use config::Environment;
 use secrecy::ExposeSecret;
 use secrecy::Secret;
 use serde_aux::prelude::deserialize_number_from_string;
-use sqlx::ConnectOptions;
 use sqlx::postgres::PgConnectOptions;
 use sqlx::postgres::PgSslMode;
+use sqlx::ConnectOptions;
 use std::env;
 
 #[derive(serde::Deserialize)]
@@ -40,8 +40,13 @@ pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
     // Initialise our configuration reader
     let configuration = config::Config::builder()
         // Add configuration values from a file named `base.yaml`.
-        .add_source(config::File::from(configuration_directory.join("base.yaml")))
-        .add_source(config::File::from(configuration_directory.join(format!("{}.yaml", environment))).required(false))
+        .add_source(config::File::from(
+            configuration_directory.join("base.yaml"),
+        ))
+        .add_source(
+            config::File::from(configuration_directory.join(format!("{}.yaml", environment)))
+                .required(false),
+        )
         // Add in a local configuration file
         // This file shouldn't be checked in to git or source control
         .add_source(config::File::from(configuration_directory.join("local.yaml")).required(false))

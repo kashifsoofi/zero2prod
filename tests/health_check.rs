@@ -52,10 +52,9 @@ async fn spawn_app() -> TestApp {
 async fn configure_database(config: &DatabaseConfiguration, create_temp_db: bool) -> PgPool {
     // Create database
     if create_temp_db {
-        let mut connection =
-            PgConnection::connect_with(&config.without_db())
-                .await
-                .expect("Failed to connect to Postgres");
+        let mut connection = PgConnection::connect_with(&config.without_db())
+            .await
+            .expect("Failed to connect to Postgres");
         connection
             .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
             .await
@@ -110,7 +109,7 @@ async fn health_check_works() {
 }
 
 #[tokio::test]
-async fn subscribe_returns_a_200_for_valid_form_data() {
+async fn subscribe_returns_a_200_for_valid_request() {
     // Arrange
     let app = spawn_app().await;
     let client = reqwest::Client::new();
@@ -148,10 +147,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
     let client = reqwest::Client::new();
     let test_cases = vec![
         ("{ \"name\":\"le guin\" }", "missing the email"),
-        (
-            "{ \"email\":\"ursula_le_guin@gmail.com\" }",
-            "missing the name",
-        ),
+        ("{ \"email\":\"ursula_le_guin@gmail.com\" }","missing the name"),
         ("", "missing both name and email"),
     ];
 
@@ -171,6 +167,43 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
             // Additional customised error message on test failure
             "The API did not fail with 400 Bad Request when the payload was {}.",
             error_message
+        );
+    }
+}
+
+#[tokio::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
+    // Arrange
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+    let test_cases = vec![
+        (
+            "{ \"name\":\"\", \"email\":\"ursula_le_guin@gmail.com\" }",
+            "empty name",
+        ),
+        ("{ \"name\":\"Ursula\", \"email\":\"\" }", "empty email"),
+        (
+            "{ \"name\":\"\", \"email\":\"definitely-not-an-email\" }",
+            "invalid email",
+        ),
+    ];
+
+    for (body, description) in test_cases {
+        // Act
+        let response = client
+            .post(&format!("{}/subscriptions", &app.address))
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        // Assert
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The API did not return a 400 Bad Request when the payload was {}.",
+            description
         );
     }
 }

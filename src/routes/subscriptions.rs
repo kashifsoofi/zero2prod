@@ -1,3 +1,4 @@
+use crate::domain::{NewSubscriber, SubscriberName};
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
@@ -21,7 +22,15 @@ pub async fn subscribe(
     request: web::Json<SubscriptionRequest>,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    match insert_subscriber(&pool, &request).await {
+    let name = match SubscriberName::parse(request.name.clone()) {
+        Ok(name) => name,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+    let new_subscriber = NewSubscriber {
+        email: request.email.clone(),
+        name: name,
+    };
+    match insert_subscriber(&pool, &new_subscriber).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_e) => HttpResponse::InternalServerError().finish(),
     }
@@ -29,11 +38,11 @@ pub async fn subscribe(
 
 #[tracing::instrument(
     name = "Saving new subscriber details in the database",
-    skip(request, pool)
+    skip(new_subscriber, pool)
 )]
 pub async fn insert_subscriber(
     pool: &PgPool,
-    request: &SubscriptionRequest,
+    new_subscriber: &NewSubscriber,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -41,8 +50,8 @@ pub async fn insert_subscriber(
         VALUES($1, $2, $3, $4)
         "#,
         Uuid::new_v4(),
-        request.email,
-        request.name,
+        new_subscriber.email,
+        new_subscriber.name.as_ref(),
         Utc::now(),
     )
     .execute(pool)
