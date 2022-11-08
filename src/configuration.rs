@@ -7,10 +7,13 @@ use sqlx::postgres::PgSslMode;
 use sqlx::ConnectOptions;
 use std::env;
 
+use crate::domain::SubscriberEmail;
+
 #[derive(serde::Deserialize)]
 pub struct Configuration {
     pub application: ApplicationConfiguration,
     pub database: DatabaseConfiguration,
+    pub email_client: EmailClientConfiguration,
 }
 
 #[derive(serde::Deserialize)]
@@ -29,6 +32,15 @@ pub struct DatabaseConfiguration {
     pub host: String,
     pub database_name: String,
     pub require_ssl: bool,
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmailClientConfiguration {
+    pub base_url: String,
+    pub sender_email: String,
+    pub authorization_token: Secret<String>,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub timeout_milliseconds: u64,
 }
 
 pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
@@ -76,5 +88,15 @@ impl DatabaseConfiguration {
         let mut options = self.without_db().database(&self.database_name);
         options.log_statements(tracing::log::LevelFilter::Trace);
         options
+    }
+}
+
+impl EmailClientConfiguration {
+    pub fn sender(&self) -> Result<SubscriberEmail, String> {
+        SubscriberEmail::parse(self.sender_email.clone())
+    }
+
+    pub fn timeout(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(self.timeout_milliseconds)
     }
 }
