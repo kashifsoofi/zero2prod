@@ -11,19 +11,19 @@ pub struct EmailClient {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct SendEmailRequest {
-    from_email: String,
-    recipients: Vec<Recipient>,
-    subject: String,
+pub struct SendEmailRequest<'a> {
+    from_email: &'a str,
+    recipients: Vec<Recipient<'a>>,
+    subject: &'a str,
     #[serde(rename(serialize = "Html-part"))]
-    html_part: String,
+    html_part: &'a str,
     #[serde(rename(serialize = "Text-part"))]
-    text_part: String,
+    text_part: &'a str,
 }
 
 #[derive(serde::Serialize)]
-pub struct Recipient {
-    email: String
+pub struct Recipient<'a> {
+    email: &'a str
 }
 
 impl EmailClient {
@@ -49,13 +49,13 @@ impl EmailClient {
     ) -> Result<(), reqwest::Error> {
         let url = format!("{}/send", self.base_url);
         let request_body = SendEmailRequest {
-            from_email: self.sender.as_ref().to_owned(),
+            from_email: self.sender.as_ref(),
             recipients: vec![
-                Recipient { email: recipient.as_ref().to_owned() },
+                Recipient { email: recipient.as_ref() },
             ],
-            subject: subject.to_owned(),
-            html_part: html_content.to_owned(),
-            text_part: text_content.to_owned(),
+            subject: subject,
+            html_part: html_content,
+            text_part: text_content,
         };
 
         let authorization_header = format!("Basic {}", self.authorization_token.expose_secret());
