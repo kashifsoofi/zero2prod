@@ -82,9 +82,21 @@ async fn configure_database(config: &DatabaseConfiguration, create_temp_db: bool
     connection_pool
 }
 
-pub async fn cleanup_database(db_pool: PgPool, email: String) {
-    sqlx::query!("DELETE FROM subscriptions WHERE email = $1", email)
-        .execute(&db_pool)
-        .await
-        .expect("Failed to fetch saved subscription.");
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/subscriptions", &self.address))
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn cleanup_subscriptinos(&self, email: String) {
+        sqlx::query!("DELETE FROM subscriptions WHERE email = $1", email)
+            .execute(&self.db_pool)
+            .await
+            .expect("Failed to fetch saved subscription.");
+    }
 }

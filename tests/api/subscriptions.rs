@@ -1,23 +1,15 @@
 use crate::helpers::spawn_app;
-use crate::helpers::cleanup_database;
 
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_request() {
     // Arrange
     let app = spawn_app().await;
-    let client = reqwest::Client::new();
 
     // Act
     let body = r#"
         { "name":"le guin", "email":"ursula_le_guin@gmail.com" }
-    "#;
-    let response = client
-        .post(&format!("{}/subscriptions", &app.address))
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    "#.to_string();
+    let response = app.post_subscriptions(body).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());
@@ -29,33 +21,26 @@ async fn subscribe_returns_a_200_for_valid_request() {
 
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
     assert_eq!(saved.name, "le guin");
-
-    cleanup_database(app.db_pool, saved.email).await
+    
+    app.cleanup_subscriptinos(saved.email).await
 }
 
 #[tokio::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
     // Arrange
     let app = spawn_app().await;
-    let client = reqwest::Client::new();
     let test_cases = vec![
-        ("{ \"name\":\"le guin\" }", "missing the email"),
+        ("{ \"name\":\"le guin\" }".to_string(), "missing the email"),
         (
-            "{ \"email\":\"ursula_le_guin@gmail.com\" }",
+            "{ \"email\":\"ursula_le_guin@gmail.com\" }".to_string(),
             "missing the name",
         ),
-        ("", "missing both name and email"),
+        ("".to_string(), "missing both name and email"),
     ];
 
     for (invalid_body, error_message) in test_cases {
         // Act
-        let response = client
-            .post(&format!("{}/subscriptions", &app.address))
-            .header("Content-Type", "application/json")
-            .body(invalid_body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
+        let response = app.post_subscriptions(invalid_body).await;
         // Assert
         assert_eq!(
             400,
@@ -71,28 +56,21 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
 async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
     // Arrange
     let app = spawn_app().await;
-    let client = reqwest::Client::new();
     let test_cases = vec![
         (
-            "{ \"name\":\"\", \"email\":\"ursula_le_guin@gmail.com\" }",
+            "{ \"name\":\"\", \"email\":\"ursula_le_guin@gmail.com\" }".to_string(),
             "empty name",
         ),
-        ("{ \"name\":\"Ursula\", \"email\":\"\" }", "empty email"),
+        ("{ \"name\":\"Ursula\", \"email\":\"\" }".to_string(), "empty email"),
         (
-            "{ \"name\":\"\", \"email\":\"definitely-not-an-email\" }",
+            "{ \"name\":\"\", \"email\":\"definitely-not-an-email\" }".to_string(),
             "invalid email",
         ),
     ];
 
     for (body, description) in test_cases {
         // Act
-        let response = client
-            .post(&format!("{}/subscriptions", &app.address))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
+        let response = app.post_subscriptions(body).await;
 
         // Assert
         assert_eq!(
