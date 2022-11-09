@@ -9,21 +9,21 @@ use std::env;
 
 use crate::domain::SubscriberEmail;
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 pub struct Configuration {
     pub application: ApplicationConfiguration,
     pub database: DatabaseConfiguration,
     pub email_client: EmailClientConfiguration,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 pub struct ApplicationConfiguration {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 pub struct DatabaseConfiguration {
     pub username: String,
     pub password: Secret<String>,
@@ -34,7 +34,7 @@ pub struct DatabaseConfiguration {
     pub require_ssl: bool,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 pub struct EmailClientConfiguration {
     pub base_url: String,
     pub sender_email: String,
