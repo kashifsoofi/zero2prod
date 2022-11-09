@@ -1,4 +1,5 @@
-use crate::domain::{NewSubscriber, SubscriberName, SubscriberEmail};
+use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
+use crate::email_client::EmailClient;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
@@ -12,17 +13,17 @@ pub struct SubscriptionRequest {
 
 impl TryFrom<web::Json<SubscriptionRequest>> for NewSubscriber {
     type Error = String;
-    
+
     fn try_from(value: web::Json<SubscriptionRequest>) -> Result<Self, Self::Error> {
         let name = SubscriberName::parse(value.name.clone())?;
         let email = SubscriberEmail::parse(value.email.clone())?;
         Ok(Self { email, name })
     }
-} 
+}
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(request, pool),
+    skip(request, pool, email_client),
     fields(
         subscriber_email = %request.email,
         subscriber_name = %request.name,
@@ -31,15 +32,28 @@ impl TryFrom<web::Json<SubscriptionRequest>> for NewSubscriber {
 pub async fn subscribe(
     request: web::Json<SubscriptionRequest>,
     pool: web::Data<PgPool>,
+    email_client: web::Data<EmailClient>,
 ) -> HttpResponse {
     let new_subscriber = match request.try_into() {
         Ok(form) => form,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    match insert_subscriber(&pool, &new_subscriber).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_e) => HttpResponse::InternalServerError().finish(),
+    if insert_subscriber(&pool, &new_subscriber).await.is_err() {
+        return HttpResponse::InternalServerError().finish();
     }
+    if email_client
+        .send_email(
+            new_subscriber.email,
+            "Welcome!",
+            "Welcome to our newsletter!",
+            "Welcome to our newsletter!",
+        )
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().finish();
+    }
+    HttpResponse::Ok().finish()
 }
 
 #[tracing::instrument(

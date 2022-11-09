@@ -1,6 +1,6 @@
 use crate::domain::SubscriberEmail;
 use reqwest::Client;
-use secrecy::{Secret, ExposeSecret};
+use secrecy::{ExposeSecret, Secret};
 
 pub struct EmailClient {
     http_client: Client,
@@ -23,7 +23,7 @@ pub struct SendEmailRequest<'a> {
 
 #[derive(serde::Serialize)]
 pub struct Recipient<'a> {
-    email: &'a str
+    email: &'a str,
 }
 
 impl EmailClient {
@@ -33,10 +33,7 @@ impl EmailClient {
         authorization_token: Secret<String>,
         timeout: std::time::Duration,
     ) -> Self {
-        let http_client = Client::builder()
-            .timeout(timeout)
-            .build()
-            .unwrap();
+        let http_client = Client::builder().timeout(timeout).build().unwrap();
         Self {
             http_client: http_client,
             base_url,
@@ -55,17 +52,16 @@ impl EmailClient {
         let url = format!("{}/send", self.base_url);
         let request_body = SendEmailRequest {
             from_email: self.sender.as_ref(),
-            recipients: vec![
-                Recipient { email: recipient.as_ref() },
-            ],
+            recipients: vec![Recipient {
+                email: recipient.as_ref(),
+            }],
             subject: subject,
             html_part: html_content,
             text_part: text_content,
         };
 
         let authorization_header = format!("Basic {}", self.authorization_token.expose_secret());
-        self
-            .http_client
+        self.http_client
             .post(&url)
             .header("Authorization", authorization_header.to_owned())
             .json(&request_body)
@@ -87,7 +83,7 @@ mod tests {
     use fake::{Fake, Faker};
     use secrecy::Secret;
     use wiremock::matchers::any;
-    use wiremock::matchers::{header, header_exists, path, method};
+    use wiremock::matchers::{header, header_exists, method, path};
     use wiremock::Request;
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -95,14 +91,13 @@ mod tests {
 
     impl wiremock::Match for SendEmailBodyMatcher {
         fn matches(&self, request: &Request) -> bool {
-            let result: Result<serde_json::Value, _> =
-                serde_json::from_slice(&request.body);
+            let result: Result<serde_json::Value, _> = serde_json::from_slice(&request.body);
             if let Ok(body) = result {
                 body.get("FromEmail").is_some()
-                && body.get("Recipients").is_some()
-                && body.get("Subject").is_some()
-                && body.get("Html-part").is_some()
-                && body.get("Text-part").is_some()
+                    && body.get("Recipients").is_some()
+                    && body.get("Subject").is_some()
+                    && body.get("Html-part").is_some()
+                    && body.get("Text-part").is_some()
             } else {
                 false
             }
@@ -127,9 +122,9 @@ mod tests {
 
     fn email_client_with_secret(base_url: String, secret: String) -> EmailClient {
         EmailClient::new(
-            base_url, 
-            email(), 
-            Secret::new(secret), 
+            base_url,
+            email(),
+            Secret::new(secret),
             std::time::Duration::from_millis(200),
         )
     }
@@ -153,12 +148,12 @@ mod tests {
             .expect(1)
             .mount(&mock_server)
             .await;
-        
+
         // Act
         let _ = email_client
             .send_email(email(), &subject(), &content(), &content())
             .await;
-        
+
         // Assert
     }
 
@@ -169,8 +164,8 @@ mod tests {
         let email_client = email_client(mock_server.uri());
 
         // We do not copy in all the matchers we have in the other test.
-        // The purpose of this test is not to assert on the request we 
-        // are sending out! 
+        // The purpose of this test is not to assert on the request we
+        // are sending out!
         // We add the bare minimum needed to trigger the path we want
         // to test in `send_email`.
         Mock::given(any())
