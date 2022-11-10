@@ -20,7 +20,8 @@ async fn subscribe_returns_a_200_for_valid_request() {
 
     // Assert
     assert_eq!(200, response.status().as_u16());
-    app.cleanup_subscriptinos("ursula_le_guin@gmail.com".into()).await
+    app.cleanup_subscriptinos("ursula_le_guin@gmail.com".into())
+        .await
 }
 
 #[tokio::test]
@@ -36,17 +37,18 @@ async fn subscribe_persists_the_new_subscriber() {
         .respond_with(ResponseTemplate::new(200))
         .mount(&app.email_server)
         .await;
-  
+
     // Act
     app.post_subscriptions(body.into()).await;
-  
+
     // Assert
     let saved = sqlx::query!("SELECT email, name, status FROM subscriptions",)
         .fetch_one(&app.db_pool)
         .await
         .expect("Failed to fetch saved subscription.");
-    app.cleanup_subscriptinos("ursula_le_guin1@gmail.com".into()).await;
-  
+    app.cleanup_subscriptinos("ursula_le_guin1@gmail.com".into())
+        .await;
+
     assert_eq!(saved.email, "ursula_le_guin1@gmail.com");
     assert_eq!(saved.name, "le guin");
     assert_eq!(saved.status, "pending_confirmation");
