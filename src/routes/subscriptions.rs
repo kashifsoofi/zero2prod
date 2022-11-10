@@ -63,7 +63,9 @@ pub async fn subscribe(
     email_client: web::Data<EmailClient>,
     base_url: web::Data<ApplicationBaseUrl>,
 ) -> Result<HttpResponse, SubscribeError> {
-    let new_subscriber = request.try_into().map_err(SubscribeError::ValidationError)?;
+    let new_subscriber = request
+        .try_into()
+        .map_err(SubscribeError::ValidationError)?;
     let mut transaction = pool
         .begin()
         .await
@@ -75,13 +77,18 @@ pub async fn subscribe(
     store_token(&mut transaction, subscriber_id, &subscription_token)
         .await
         .context("Failed to store the confirmation token for a new subscriber.")?;
-        transaction
+    transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new subscriber.")?;
-    send_confirmation_email(&email_client, new_subscriber, &base_url.0, &subscription_token)
-        .await
-        .context("Failed to send a confirmation email.")?;
+    send_confirmation_email(
+        &email_client,
+        new_subscriber,
+        &base_url.0,
+        &subscription_token,
+    )
+    .await
+    .context("Failed to send a confirmation email.")?;
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -166,9 +173,7 @@ pub async fn store_token(
     )
     .execute(transaction)
     .await
-    .map_err(|e| {
-        StoreTokenError(e)
-    })?;
+    .map_err(|e| StoreTokenError(e))?;
     Ok(())
 }
 
@@ -197,7 +202,7 @@ impl std::fmt::Display for StoreTokenError {
     }
 }
 
-fn error_chain_fmt(
+pub fn error_chain_fmt(
     e: &impl std::error::Error,
     f: &mut std::fmt::Formatter<'_>,
 ) -> std::fmt::Result {

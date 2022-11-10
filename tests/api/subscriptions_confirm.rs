@@ -70,10 +70,13 @@ async fn clicking_on_the_confirmation_link_confirms_a_subscriber() {
         .unwrap();
 
     // Assert
-    let saved = sqlx::query!("SELECT email, name, status FROM subscriptions WHERE email = $1", "ursula_le_guin5@gmail.com")
-        .fetch_one(&app.db_pool)
-        .await
-        .expect("Failed to fetch saved subscription.");
+    let saved = sqlx::query!(
+        "SELECT email, name, status FROM subscriptions WHERE email = $1",
+        "ursula_le_guin5@gmail.com"
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .expect("Failed to fetch saved subscription.");
     app.cleanup_subscriptinos("ursula_le_guin5@gmail.com".into())
         .await;
 
