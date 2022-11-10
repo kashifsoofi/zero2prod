@@ -25,6 +25,53 @@ pub struct TestApp {
     pub email_server: MockServer,
 }
 
+pub struct ConfirmationLinks {
+    pub html: reqwest::Url,
+    pub plain_text: reqwest::Url,
+}
+
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/subscriptions", &self.address))
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn cleanup_subscriptinos(&self, email: String) {
+        sqlx::query!("DELETE FROM subscriptions WHERE email = $1", email)
+            .execute(&self.db_pool)
+            .await
+            .expect("Failed to fetch saved subscription.");
+    }
+
+    pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {
+        let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
+
+        // Extract the link from one of the request fields.
+        let get_link = |s: &str| {
+            let links: Vec<_> = linkify::LinkFinder::new()
+                .links(s)
+                .filter(|l| *l.kind() == linkify::LinkKind::Url)
+                .collect();
+            assert_eq!(links.len(), 1);
+            let raw_link = links[0].as_str().to_owned();
+            let mut confirmation_link = reqwest::Url::parse(&raw_link).unwrap();
+            // Let's make sure we don't call random APIs on the web
+            assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
+            confirmation_link.set_port(Some(self.port)).unwrap();
+            confirmation_link
+        };
+
+        let html = get_link(&body["Html-part"].as_str().unwrap());
+        let plain_text = get_link(&body["Text-part"].as_str().unwrap());
+        ConfirmationLinks { html, plain_text }
+    }
+}
+
 const CREATE_TEMP_DB: bool = false;
 
 /// Spin up an instance of our application
@@ -89,23 +136,4 @@ async fn configure_database(config: &DatabaseConfiguration, create_temp_db: bool
     }
 
     connection_pool
-}
-
-impl TestApp {
-    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
-        reqwest::Client::new()
-            .post(&format!("{}/subscriptions", &self.address))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn cleanup_subscriptinos(&self, email: String) {
-        sqlx::query!("DELETE FROM subscriptions WHERE email = $1", email)
-            .execute(&self.db_pool)
-            .await
-            .expect("Failed to fetch saved subscription.");
-    }
 }
