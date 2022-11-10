@@ -42,10 +42,14 @@ impl TestApp {
     }
 
     pub async fn cleanup_subscriptinos(&self, email: String) {
+        sqlx::query!("delete from subscription_tokens st using subscriptions s where st.subscriber_id = s.id and s.email = $1", email)
+            .execute(&self.db_pool)
+            .await
+            .expect("Failed to delete subscription_token.");
         sqlx::query!("DELETE FROM subscriptions WHERE email = $1", email)
             .execute(&self.db_pool)
             .await
-            .expect("Failed to fetch saved subscription.");
+            .expect("Failed to delete subscription.");
     }
 
     pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {
