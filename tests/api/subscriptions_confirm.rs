@@ -14,6 +14,7 @@ async fn confirmations_without_token_are_rejected_with_a_400() {
 
     // Assert
     assert_eq!(response.status().as_u16(), 400);
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -42,6 +43,7 @@ async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
 
     app.cleanup_subscriptinos("ursula_le_guin4@gmail.com".into())
         .await;
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -83,4 +85,5 @@ async fn clicking_on_the_confirmation_link_confirms_a_subscriber() {
     assert_eq!(saved.email, "ursula_le_guin5@gmail.com");
     assert_eq!(saved.name, "le guin5");
     assert_eq!(saved.status, "confirmed");
+    app.cleanup_user().await;
 }
