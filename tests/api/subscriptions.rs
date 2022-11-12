@@ -21,7 +21,8 @@ async fn subscribe_returns_a_200_for_valid_request() {
     // Assert
     assert_eq!(200, response.status().as_u16());
     app.cleanup_subscriptinos("ursula_le_guin@gmail.com".into())
-        .await
+        .await;
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -55,6 +56,7 @@ async fn subscribe_persists_the_new_subscriber() {
     assert_eq!(saved.email, "ursula_le_guin1@gmail.com");
     assert_eq!(saved.name, "le guin");
     assert_eq!(saved.status, "pending_confirmation");
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -82,6 +84,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
             error_message
         );
     }
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -112,6 +115,7 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
             description
         );
     }
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -136,6 +140,7 @@ async fn subscribe_sends_a_confirmation_email_for_valid_data() {
     // Mock asserts on drop
     app.cleanup_subscriptinos("ursula_le_guin2@gmail.com".into())
         .await;
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -168,4 +173,5 @@ async fn subscribe_sends_a_confirmation_email_with_a_link() {
 
     // The two links should be identical
     assert_eq!(confirmation_links.html, confirmation_links.plain_text);
+    app.cleanup_user().await;
 }

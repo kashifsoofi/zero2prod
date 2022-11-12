@@ -18,4 +18,5 @@ async fn health_check_works() {
     // Assert
     assert!(response.status().is_success());
     assert_eq!(Some(0), response.content_length());
+    app.cleanup_user().await;
 }

@@ -1,5 +1,6 @@
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHasher};
 use once_cell::sync::Lazy;
-use sha3::Digest;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
@@ -36,8 +37,11 @@ impl TestUser {
     }
 
     async fn store(&self, pool: &PgPool) {
-        let password_hash = sha3::Sha3_256::digest(self.password.as_bytes());
-        let password_hash = format!("{:x}", password_hash);
+        let salt = SaltString::generate(&mut rand::thread_rng());
+        let password_hash = Argon2::default()
+            .hash_password(self.password.as_bytes(), &salt)
+            .unwrap()
+            .to_string();
         sqlx::query!(
             "INSERT INTO users (id, username, password_hash)
             VALUES ($1, $2, $3)",
@@ -94,6 +98,13 @@ impl TestApp {
             .execute(&self.db_pool)
             .await
             .expect("Failed to delete subscription.");
+    }
+
+    pub async fn cleanup_user(&self) {
+        sqlx::query!("delete from users where id = $1", self.test_user.id)
+            .execute(&self.db_pool)
+            .await
+            .expect("Failed to delete user.");
     }
 
     pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {

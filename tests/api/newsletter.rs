@@ -3,15 +3,14 @@ use wiremock::matchers::{any, method, path};
 use wiremock::{Mock, ResponseTemplate};
 
 #[tokio::test]
+#[serial_test::serial]
 async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
     // Arrange
     let app = spawn_app().await;
     create_unconfirmed_subscriber(&app, "ursula_le_guin11@gmail.com").await;
-    print!("here0");
 
     Mock::given(any())
         .respond_with(ResponseTemplate::new(200))
-        // We assert that no request is fired at Postmark!
         .expect(0)
         .mount(&app.email_server)
         .await;
@@ -36,9 +35,11 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
 
     app.cleanup_subscriptinos("ursula_le_guin11@gmail.com".into())
         .await;
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn newsletters_are_delivered_to_confirmed_subscribers() {
     // Arrange
     let app = spawn_app().await;
@@ -64,6 +65,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
     // Assert
     app.cleanup_subscriptinos("ursula_le_guin12@gmail.com".into())
         .await;
+    app.cleanup_user().await;
 
     assert_eq!(response.status().as_u16(), 200);
     // Mock verifies on Drop that we have sent the newsletter email
@@ -100,6 +102,7 @@ async fn newsletters_returns_400_for_invalid_data() {
             error_message
         );
     }
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -126,6 +129,7 @@ async fn requests_missing_authorization_are_rejected() {
         r#"Basic realm="publish""#,
         response.headers()["WWW-Authenticate"]
     );
+    app.cleanup_user().await;
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp, email: &str) -> ConfirmationLinks {
