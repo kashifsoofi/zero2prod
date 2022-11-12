@@ -17,6 +17,7 @@ name = "zero2prod"
 actix-web = "4"
 anyhow = "1"
 base64 = "0.13"
+sha3 = "0.9"
 chrono = { version = "0.4.22", default-features = false, features = ["clock"] }
 config = { version = "0.13", default-features = false, features = ["yaml"] }
 rand = { version = "0.8", features=["std_rng"] }
