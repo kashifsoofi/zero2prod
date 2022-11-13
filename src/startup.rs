@@ -5,11 +5,12 @@ use crate::routes::{
 };
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
+use secrecy::Secret;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
-use secrecy::Secret;
+use actix_web_flash_messages::FlashMessagesFramework;
 
 pub struct Application {
     port: u16,
@@ -86,7 +87,7 @@ pub fn run(
             .route("/newsletters", web::post().to(publish_newsletter))
             .route("/", web::get().to(home))
             .route("/login", web::get().to(login_form))
-            .route("/loing", web::post().to(login))
+            .route("/login", web::post().to(login))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
