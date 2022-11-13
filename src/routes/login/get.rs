@@ -5,8 +5,8 @@ use crate::startup::HmacSecret;
 
 #[derive(serde::Deserialize)]
 pub struct QueryParams {
-    error: Option<String>,
-    tag: Option<String>,
+    error: String,
+    tag: String,
 }
 
 impl QueryParams {
