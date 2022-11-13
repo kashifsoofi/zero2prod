@@ -25,7 +25,7 @@ pub async fn login(
     login_request: web::Form<LoginRequest>,
     pool: web::Data<PgPool>,
     secret: web::Data<HmacSecret>,
-) -> HttpResponse {
+) -> Result<HttpResponse, InternalError<LoginError>> {
     let credentials = Credentials {
         username: login_request.0.username,
         password: login_request.0.password,
@@ -35,9 +35,9 @@ pub async fn login(
         Ok(user_id) => {
             tracing::Span::current()
                 .record("user_id", &tracing::field::display(&user_id));
-            HttpResponse::SeeOther()
+            Ok(HttpResponse::SeeOther()
                 .insert_header((LOCATION, "/"))
-                .finish()
+                .finish())
         }
         Err(e) => {
             let e = match e {
