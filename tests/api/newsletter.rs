@@ -161,6 +161,8 @@ async fn non_existing_user_is_rejected() {
         r#"Basic realm="publish""#,
         response.headers()["WWW-Authenticate"]
     );
+
+    app.cleanup_user().await;
 }
 
 #[tokio::test]
@@ -192,6 +194,8 @@ async fn invalid_password_is_rejected() {
         r#"Basic realm="publish""#,
         response.headers()["WWW-Authenticate"]
     );
+
+    app.cleanup_user().await;
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp, email: &str) -> ConfirmationLinks {
