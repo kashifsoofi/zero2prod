@@ -38,7 +38,7 @@ tracing-log = "0.1.1"
 tracing-actix-web = "0.6"
 urlencoding = "2"
 unicode-segmentation = "1"
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 validator = "0.14"
 hmac = { version = "0.12", features = ["std"] }
 sha2 = "0.10"
