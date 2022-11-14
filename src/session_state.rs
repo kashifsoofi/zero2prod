@@ -1,9 +1,9 @@
 use actix_session::Session;
-use uuid::Uuid;
 use actix_session::SessionExt;
 use actix_web::dev::Payload;
 use actix_web::{FromRequest, HttpRequest};
-use std::future::{Ready, ready};
+use std::future::{ready, Ready};
+use uuid::Uuid;
 
 pub struct TypedSession(Session);
 
@@ -24,8 +24,8 @@ impl TypedSession {
 }
 
 impl FromRequest for TypedSession {
-    // This is a complicated way of saying 
-    // "We return the same error returned by the 
+    // This is a complicated way of saying
+    // "We return the same error returned by the
     // implementation of `FromRequest` for `Session`".
     type Error = <Session as FromRequest>::Error;
     // Rust does not yet support the `async` syntax in traits.

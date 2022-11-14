@@ -1,7 +1,7 @@
 use crate::authentication::AuthError;
 use crate::authentication::{validate_credentials, Credentials};
 use crate::routes::error_chain_fmt;
-use actix_session::Session;
+use crate::session_state::TypedSession;
 use actix_web::error::InternalError;
 use actix_web::http::header::LOCATION;
 use actix_web::web;
@@ -9,7 +9,6 @@ use actix_web::HttpResponse;
 use actix_web_flash_messages::FlashMessage;
 use secrecy::Secret;
 use sqlx::PgPool;
-use crate::session_state::TypedSession;
 
 #[derive(serde::Deserialize)]
 pub struct LoginRequest {
