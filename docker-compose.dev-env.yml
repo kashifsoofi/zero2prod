@@ -11,6 +11,11 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=Password123
       - POSTGRES_DB=newsletter
+
+  newsletter.redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
   
   newsletter.db.migrations:
     depends_on:
