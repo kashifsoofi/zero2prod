@@ -155,6 +155,14 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn post_logout(&self) -> reqwest::Response {
+        self.api_client
+            .post(&format!("{}/admin/logout", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn cleanup_subscriptinos(&self, email: String) {
         sqlx::query!("delete from subscription_tokens st using subscriptions s where st.subscriber_id = s.id and s.email = $1", email)
             .execute(&self.db_pool)
