@@ -9,6 +9,7 @@ use actix_web::HttpResponse;
 use actix_web_flash_messages::FlashMessage;
 use secrecy::Secret;
 use sqlx::PgPool;
+use crate::session_state::TypedSession;
 
 #[derive(serde::Deserialize)]
 pub struct LoginRequest {
@@ -23,7 +24,7 @@ pub struct LoginRequest {
 pub async fn login(
     login_request: web::Form<LoginRequest>,
     pool: web::Data<PgPool>,
-    session: Session,
+    session: TypedSession,
 ) -> Result<HttpResponse, InternalError<LoginError>> {
     let credentials = Credentials {
         username: login_request.0.username,
@@ -35,7 +36,7 @@ pub async fn login(
             tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
             session.renew();
             session
-                .insert("user_id", user_id)
+                .insert_user_id(user_id)
                 .map_err(|e| login_redirect(LoginError::UnexpectedError(e.into())))?;
             Ok(HttpResponse::SeeOther()
                 .insert_header((LOCATION, "/admin/dashboard"))
