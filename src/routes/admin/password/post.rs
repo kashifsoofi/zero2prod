@@ -6,6 +6,7 @@ use actix_web::{web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
 pub struct ChangePasswordRequest {
@@ -49,9 +50,7 @@ pub async fn change_password(
     Ok(see_other("/admin/password"))
 }
 
-async fn reject_anonymous_users(
-    session: TypedSession
-) -> Result<Uuid, actix_web::Error> {
+async fn reject_anonymous_users(session: TypedSession) -> Result<Uuid, actix_web::Error> {
     match session.get_user_id().map_err(e500)? {
         Some(user_id) => Ok(user_id),
         None => {
