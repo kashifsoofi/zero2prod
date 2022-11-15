@@ -59,7 +59,7 @@ impl ResponseError for PublishError {
     skip(publish_request, pool, email_client, request),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
-pub async fn publish_newsletter(
+pub async fn publish_newsletter_old(
     publish_request: web::Json<PublishNewsletterRequest>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
