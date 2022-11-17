@@ -197,15 +197,19 @@ impl TestApp {
     }
 
     pub async fn cleanup_user(&self) {
-        let mut transaction = self.db_pool
+        let mut transaction = self
+            .db_pool
             .begin()
             .await
             .expect("Failed to start transaction");
 
-        sqlx::query!("delete from idempotency where user_id = $1", self.test_user.id)
-            .execute(&mut transaction)
-            .await
-            .expect("Failed to delete user.");
+        sqlx::query!(
+            "delete from idempotency where user_id = $1",
+            self.test_user.id
+        )
+        .execute(&mut transaction)
+        .await
+        .expect("Failed to delete user.");
 
         sqlx::query!("delete from users where id = $1", self.test_user.id)
             .execute(&mut transaction)
